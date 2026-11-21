@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>211 外食減脂餐搭配與額度追蹤器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #F7FAF8;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+        }
+        .card {
+            background: #FFFFFF;
+            border: 1px solid #E5EFE9;
+            border-radius: 1.25rem;
+            box-shadow: 0 4px 16px rgba(34, 84, 61, 0.04);
+        }
+        .btn-primary {
+            background-color: #2E7D5B;
+            color: #FFFFFF;
+        }
+        .btn-primary:hover {
+            background-color: #236347;
+        }
+        .btn-soft {
+            background-color: #EAF5EF;
+            color: #236347;
+        }
+        .btn-soft:hover {
+            background-color: #D7ECE1;
+        }
+        /* 隱藏橫向捲軸但保留滑動功能 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="max-w-2xl mx-auto min-h-screen pb-16 text-gray-700">
+
+    <!-- 頂部外食品牌分頁導覽列 (Sticky) -->
+    <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-emerald-100 shadow-sm px-3 py-2.5">
+        <div class="flex items-center justify-between mb-1.5 px-1">
+            <span class="text-[11px] font-bold text-emerald-800 flex items-center gap-1">
+                <i class="fa-solid fa-store"></i> 外食族品牌菜單分頁
+            </span>
+            <span class="text-[10px] text-gray-400">點選分頁切換對應獎池</span>
+        </div>
+        <div id="brand-tabs" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+            <button onclick="selectBrand('all')" data-brand="all" class="brand-tab whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold border transition">🌿 全部通用</button>
+            <button onclick="selectBrand('711')" data-brand="711" class="brand-tab whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold border transition">🏪 7-11</button>
+            <button onclick="selectBrand('family')" data-brand="family" class="brand-tab whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold border transition">🏪 全家</button>
+            <button onclick="selectBrand('mcd')" data-brand="mcd" class="brand-tab whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold border transition">🍔 麥當勞</button>
+            <button onclick="selectBrand('mos')" data-brand="mos" class="brand-tab whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold border transition">🍔 摩斯漢堡</button>
+            <button onclick="selectBrand('other')" data-brand="other" class="brand-tab whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold border transition">🍱 其他外食</button>
+        </div>
+    </nav>
+
+    <div class="p-4 space-y-4">
+        <!-- 頂部標題列 -->
+        <header class="card p-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-bowl-food"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-gray-800">211 減脂餐搭配工坊</h1>
+                    <p class="text-xs text-gray-500">蔬菜 2 份・澱粉 1 份・蛋白質 1 份｜外食隨選扣算</p>
+                </div>
+            </div>
+            <button onclick="openProfileModal()" class="btn-soft text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
+                <i class="fa-solid fa-sliders"></i>
+                <span>身高體重 / 目標設定</span>
+            </button>
+        </header>
+
+        <!-- 健康減脂原則提示 -->
+        <section id="principle-banner" class="card p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+            <div class="flex items-start gap-3">
+                <span class="text-xl mt-0.5">🌿</span>
+                <div class="space-y-1 text-xs leading-relaxed text-emerald-950">
+                    <div class="font-bold text-sm text-emerald-800">健康減脂原則與個人化建議</div>
+                    <p id="principle-text">請先設定身高與體重以計算專屬每日建議額度。</p>
+                    <p class="text-emerald-800/80">
+                        • <b>211 餐盤原則</b>：每餐 2 份蔬菜（佔餐盤 1/2）、1 份全穀雜糧澱粉（1/4）、1 份豆魚蛋肉蛋白質（1/4）。外食時優先挑原型食物、減少濃稠醬汁與油炸物。<br>
+                        • <b>進食順序</b>：水 ➔ 肉（蛋白質） ➔ 菜（蔬菜） ➔ 飯（澱粉），有助平穩血糖與延長飽足感。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 每日建議攝取量與剩餘額度 -->
+        <section class="card p-4 space-y-3">
+            <div class="flex items-center justify-between">
+                <h2 class="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                    <i class="fa-solid fa-chart-pie text-emerald-600"></i>
+                    <span>今日建議攝取量與剩餘額度</span>
+                </h2>
+                <span id="today-date-label" class="text-xs text-gray-400"></span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <!-- 熱量 -->
+                <div class="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-100">
+                    <div class="text-[11px] text-gray-500 font-medium">熱量 (kcal)</div>
+                    <div id="rem-cal" class="text-lg font-extrabold text-emerald-700 mt-0.5">0</div>
+                    <div class="text-[10px] text-gray-400 mt-0.5">
+                        剩餘 / 建議 <span id="target-cal">0</span>
+                    </div>
+                    <div class="w-full bg-emerald-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="bar-cal" class="bg-emerald-600 h-full rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- 蛋白質 -->
+                <div class="p-3 rounded-2xl bg-sky-50/70 border border-sky-100">
+                    <div class="text-[11px] text-gray-500 font-medium">蛋白質 (g)</div>
+                    <div id="rem-pro" class="text-lg font-extrabold text-sky-700 mt-0.5">0</div>
+                    <div class="text-[10px] text-gray-400 mt-0.5">
+                        剩餘 / 建議 <span id="target-pro">0</span>
+                    </div>
+                    <div class="w-full bg-sky-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="bar-pro" class="bg-sky-600 h-full rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- 脂肪 -->
+                <div class="p-3 rounded-2xl bg-amber-50/70 border border-amber-100">
+                    <div class="text-[11px] text-gray-500 font-medium">脂肪 (g)</div>
+                    <div id="rem-fat" class="text-lg font-extrabold text-amber-700 mt-0.5">0</div>
+                    <div class="text-[10px] text-gray-400 mt-0.5">
+                        剩餘 / 上限 <span id="target-fat">0</span>
+                    </div>
+                    <div class="w-full bg-amber-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="bar-fat" class="bg-amber-500 h-full rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- 鈉 -->
+                <div class="p-3 rounded-2xl bg-rose-50/70 border border-rose-100">
+                    <div class="text-[11px] text-gray-500 font-medium">鈉 (mg)</div>
+                    <div id="rem-sod" class="text-lg font-extrabold text-rose-700 mt-0.5">0</div>
+                    <div class="text-[10px] text-gray-400 mt-0.5">
+                        剩餘 / 上限 <span id="target-sod">2000</span>
+                    </div>
+                    <div class="w-full bg-rose-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="bar-sod" class="bg-rose-500 h-full rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 餐別選擇 -->
+        <section class="card p-4 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <h2 class="text-sm font-bold text-gray-800">🍽️ 選擇目前要搭配的餐別</h2>
+                <span class="text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full font-semibold">
+                    目前餐別：<span id="current-meal-badge">早餐</span>
+                </span>
+            </div>
+            <div class="grid grid-cols-4 gap-2" id="meal-tabs">
+                <button onclick="selectMeal('早餐')" data-meal="早餐" class="meal-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition">🌅 早餐</button>
+                <button onclick="selectMeal('午餐')" data-meal="午餐" class="meal-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition">☀️ 午餐</button>
+                <button onclick="selectMeal('晚餐')" data-meal="晚餐" class="meal-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition">🌙 晚餐</button>
+                <button onclick="selectMeal('下午茶')" data-meal="下午茶" class="meal-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition">🍵 下午茶</button>
+            </div>
+        </section>
+
+        <!-- 211 三大獎池抽籤區 -->
+        <section class="card p-4 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm font-bold text-gray-800">🎲 211 三大獎池抽籤</h2>
+                        <span id="current-brand-badge" class="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">🌿 全部通用</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-0.5">依照上方選擇的外食品牌，從三個獎池中抽取搭配</p>
+                </div>
+                <button onclick="drawAll211()" class="btn-primary text-xs font-bold px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-shuffle"></i>
+                    <span>一鍵抽整組 211</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- 蔬菜 2 份 -->
+                <div class="p-3.5 rounded-2xl border border-emerald-200 bg-emerald-50/40 flex flex-col justify-between space-y-3">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">🥬 蔬菜（2 份）</span>
+                            <span class="text-[11px] text-gray-400"><span id="count-veggie">0</span> 項</span>
+                        </div>
+                        <div id="picked-veggie" class="min-h-[96px] p-2.5 rounded-xl bg-white border border-emerald-100 text-xs text-gray-400 flex items-center justify-center text-center">
+                            尚未抽取蔬菜選項
+                        </div>
+                    </div>
+                    <button onclick="drawSingle('veggie')" class="w-full btn-soft font-bold text-xs py-2 rounded-xl transition">
+                        抽一份蔬菜
+                    </button>
+                </div>
+
+                <!-- 澱粉 1 份 -->
+                <div class="p-3.5 rounded-2xl border border-amber-200 bg-amber-50/40 flex flex-col justify-between space-y-3">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">🍠 澱粉（1 份）</span>
+                            <span class="text-[11px] text-gray-400"><span id="count-carb">0</span> 項</span>
+                        </div>
+                        <div id="picked-carb" class="min-h-[96px] p-2.5 rounded-xl bg-white border border-amber-100 text-xs text-gray-400 flex items-center justify-center text-center">
+                            尚未抽取澱粉選項
+                        </div>
+                    </div>
+                    <button onclick="drawSingle('carb')" class="w-full bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs py-2 rounded-xl transition">
+                        抽一份澱粉
+                    </button>
+                </div>
+
+                <!-- 蛋白質 1 份 -->
+                <div class="p-3.5 rounded-2xl border border-sky-200 bg-sky-50/40 flex flex-col justify-between space-y-3">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-sky-800 bg-sky-100 px-2.5 py-0.5 rounded-full">🍗 蛋白質（1 份）</span>
+                            <span class="text-[11px] text-gray-400"><span id="count-protein">0</span> 項</span>
+                        </div>
+                        <div id="picked-protein" class="min-h-[96px] p-2.5 rounded-xl bg-white border border-sky-100 text-xs text-gray-400 flex items-center justify-center text-center">
+                            尚未抽取蛋白質選項
+                        </div>
+                    </div>
+                    <button onclick="drawSingle('protein')" class="w-full bg-sky-100 hover:bg-sky-200 text-sky-900 font-bold text-xs py-2 rounded-xl transition">
+                        抽一份蛋白質
+                    </button>
+                </div>
+            </div>
+
+            <!-- 將抽到的組合加入今日飲食 -->
+            <div class="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+                <div id="combo-summary" class="text-xs text-gray-500">
+                    抽中項目後可一鍵加入今日飲食並自動扣除額度。
+                </div>
+                <button onclick="logDrawnItems()" class="btn-primary text-xs font-bold px-4 py-2 rounded-xl transition">
+                    <i class="fa-solid fa-plus mr-1"></i>將抽中項目加入今日飲食
+                </button>
+            </div>
+        </section>
+
+        <!-- 自行新增獎池選項與管理 -->
+        <section class="card p-4 space-y-3">
+            <div class="flex items-center justify-between">
+                <h2 class="text-sm font-bold text-gray-800">➕ 自行新增獎池選項與營養指標</h2>
+                <button onclick="togglePoolList()" id="btn-toggle-pool" class="text-xs text-emerald-700 font-bold hover:underline">
+                    查看 / 管理此分頁選項
+                </button>
+            </div>
+
+            <form onsubmit="addPoolOption(event)" class="space-y-2.5">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                    <select id="new-opt-brand" class="text-xs p-2.5 border border-gray-200 rounded-xl bg-white outline-none focus:border-emerald-500">
+                        <option value="711">🏪 7-11</option>
+                        <option value="family">🏪 全家</option>
+                        <option value="mcd">🍔 麥當勞</option>
+                        <option value="mos">🍔 摩斯漢堡</option>
+                        <option value="other">🍱 其他外食</option>
+                    </select>
+                    <select id="new-opt-cat" class="text-xs p-2.5 border border-gray-200 rounded-xl bg-white outline-none focus:border-emerald-500">
+                        <option value="veggie">🥬 蔬菜（2 份）</option>
+                        <option value="carb">🍠 澱粉（1 份）</option>
+                        <option value="protein">🍗 蛋白質（1 份）</option>
+                    </select>
+                    <input id="new-opt-name" type="text" required placeholder="品項名稱（例如：和風海藻沙拉）" class="sm:col-span-2 text-xs p-2.5 border border-gray-200 rounded-xl outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div>
+                        <label class="text-[10px] text-gray-400 block mb-0.5">熱量 (kcal)</label>
+                        <input id="new-opt-cal" type="number" step="0.1" min="0" required placeholder="0" class="w-full text-xs p-2 border border-gray-200 rounded-xl outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-400 block mb-0.5">蛋白質 (g)</label>
+                        <input id="new-opt-pro" type="number" step="0.1" min="0" required placeholder="0" class="w-full text-xs p-2 border border-gray-200 rounded-xl outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-400 block mb-0.5">脂肪 (g)</label>
+                        <input id="new-opt-fat" type="number" step="0.1" min="0" required placeholder="0" class="w-full text-xs p-2 border border-gray-200 rounded-xl outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-400 block mb-0.5">鈉 (mg)</label>
+                        <input id="new-opt-sod" type="number" step="1" min="0" required placeholder="0" class="w-full text-xs p-2 border border-gray-200 rounded-xl outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full btn-primary text-xs font-bold py-2.5 rounded-xl transition">
+                    新增至該品牌獎池
+                </button>
+            </form>
+
+            <!-- 現有獎池選項清單 -->
+            <div id="pool-manager-box" class="hidden pt-3 border-t border-gray-100 space-y-2 text-xs">
+                <div class="flex items-center justify-between flex-wrap gap-1">
+                    <div class="flex gap-1.5">
+                        <button onclick="switchManageCat('veggie')" id="mcat-veggie" class="mcat-btn px-2.5 py-1 rounded-lg font-bold bg-emerald-100 text-emerald-800">蔬菜</button>
+                        <button onclick="switchManageCat('carb')" id="mcat-carb" class="mcat-btn px-2.5 py-1 rounded-lg font-bold bg-gray-100 text-gray-600">澱粉</button>
+                        <button onclick="switchManageCat('protein')" id="mcat-protein" class="mcat-btn px-2.5 py-1 rounded-lg font-bold bg-gray-100 text-gray-600">蛋白質</button>
+                    </div>
+                    <span class="text-[11px] text-gray-400">顯示目前分頁的菜單項目</span>
+                </div>
+                <div id="pool-options-list" class="space-y-1.5 max-h-56 overflow-y-auto"></div>
+            </div>
+        </section>
+
+        <!-- 記錄每天吃了什麼 -->
+        <section class="card p-4 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                    <h2 class="text-sm font-bold text-gray-800">📝 今日飲食紀錄（已吃內容與額度扣除）</h2>
+                    <p class="text-xs text-gray-400">記錄每天吃了什麼，刪除項目會自動把額度加回來</p>
+                </div>
+                <button onclick="clearTodayLogs()" class="text-xs text-rose-500 hover:underline font-medium">
+                    清空今日紀錄
+                </button>
+            </div>
+
+            <!-- 手動補記一筆食物 -->
+            <form onsubmit="addManualFood(event)" class="p-3 rounded-2xl bg-gray-50 border border-gray-100 space-y-2">
+                <div class="text-[11px] font-bold text-gray-600">手動補記其他餐點</div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <select id="man-meal" class="text-xs p-2 border border-gray-200 rounded-xl bg-white">
+                        <option value="早餐">早餐</option>
+                        <option value="午餐">午餐</option>
+                        <option value="晚餐">晚餐</option>
+                        <option value="下午茶">下午茶</option>
+                    </select>
+                    <input id="man-name" type="text" required placeholder="食物名稱" class="sm:col-span-2 text-xs p-2 border border-gray-200 rounded-xl bg-white">
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <input id="man-cal" type="number" step="0.1" min="0" required placeholder="熱量 kcal" class="text-xs p-2 border border-gray-200 rounded-xl bg-white">
+                    <input id="man-pro" type="number" step="0.1" min="0" required placeholder="蛋白質 g" class="text-xs p-2 border border-gray-200 rounded-xl bg-white">
+                    <input id="man-fat" type="number" step="0.1" min="0" required placeholder="脂肪 g" class="text-xs p-2 border border-gray-200 rounded-xl bg-white">
+                    <input id="man-sod" type="number" step="1" min="0" required placeholder="鈉 mg" class="text-xs p-2 border border-gray-200 rounded-xl bg-white">
+                </div>
+                <button type="submit" class="w-full btn-soft text-xs font-bold py-2 rounded-xl transition">
+                    + 加入今日飲食紀錄
+                </button>
+            </form>
+
+            <!-- 今日已吃清單 -->
+            <div id="today-logs-list" class="space-y-2 text-xs"></div>
+        </section>
+    </div>
+
+    <!-- 身高體重與健康減脂設定彈窗 -->
+    <div id="profile-modal" class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 shadow-xl border border-emerald-100 space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 class="font-bold text-base text-gray-800">📏 身高體重與健康減脂計算</h3>
+                <button id="close-modal-btn" onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600 text-sm hidden">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-gray-500 leading-relaxed">
+                請輸入您的身高與體重，系統將依據健康減脂原則（每日適度熱量赤字、高蛋白保留肌肉、鈉含量控制）為您計算每日建議攝取額度。
+            </p>
+
+            <form onsubmit="saveProfile(event)" class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-gray-600 block mb-1">身高 (cm)</label>
+                        <input id="prof-height" type="number" step="0.1" min="100" max="250" required placeholder="例如：162" class="w-full text-sm p-2.5 border border-gray-200 rounded-xl outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-600 block mb-1">體重 (kg)</label>
+                        <input id="prof-weight" type="number" step="0.1" min="30" max="250" required placeholder="例如：55" class="w-full text-sm p-2.5 border border-gray-200 rounded-xl outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-gray-600 block mb-1">性別</label>
+                        <select id="prof-gender" class="w-full text-sm p-2.5 border border-gray-200 rounded-xl bg-white outline-none focus:border-emerald-500">
+                            <option value="female">女性</option>
+                            <option value="male">男性</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-600 block mb-1">年齡</label>
+                        <input id="prof-age" type="number" min="15" max="90" value="25" required class="w-full text-sm p-2.5 border border-gray-200 rounded-xl outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-gray-600 block mb-1">日常活動量</label>
+                    <select id="prof-activity" class="w-full text-sm p-2.5 border border-gray-200 rounded-xl bg-white outline-none focus:border-emerald-500">
+                        <option value="1.2">久坐少動（辦公室 / 學生上課為主）</option>
+                        <option value="1.375" selected>輕度活動（每週運動 1～3 天）</option>
+                        <option value="1.55">中度活動（每週運動 3～5 天）</option>
+                        <option value="1.725">高度活動（每週運動 6～7 天）</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="w-full btn-primary font-bold text-sm py-3 rounded-xl shadow transition">
+                    計算並套用每日減脂額度
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'diet_211_dining_out_v1';
+
+        const BRAND_LABELS = {
+            all: '🌿 全部通用',
+            '711': '🏪 7-11',
+            family: '🏪 全家',
+            mcd: '🍔 麥當勞',
+            mos: '🍔 摩斯漢堡',
+            other: '🍱 其他外食'
+        };
+
+        // 預設各品牌 211 獎池選項
+        const defaultPools = {
+            veggie: [
+                { id: 101, brand: '711', name: '和風海藻沙拉（2份量）', cal: 68, pro: 2.8, fat: 0.6, sod: 410 },
+                { id: 102, brand: '711', name: '一日野菜-農夫十蔬', cal: 74, pro: 3.1, fat: 0.8, sod: 290 },
+                { id: 103, brand: 'family', name: '牧場直送4.0鮮乳高麗菜沙拉+海帶芽', cal: 82, pro: 3.4, fat: 1.2, sod: 340 },
+                { id: 104, brand: 'family', name: '彩蔬鮮菇溫沙拉', cal: 95, pro: 4.2, fat: 2.1, sod: 380 },
+                { id: 105, brand: 'mcd', name: '四季沙拉（不加醬或和風醬減半）', cal: 45, pro: 1.8, fat: 0.4, sod: 120 },
+                { id: 106, brand: 'mos', name: '和風炸雞沙拉（去炸雞或單點生菜沙拉）', cal: 60, pro: 2.0, fat: 0.5, sod: 190 },
+                { id: 107, brand: 'other', name: '自助餐燙青菜兩樣（少油版）', cal: 90, pro: 3.6, fat: 3.0, sod: 320 }
+            ],
+            carb: [
+                { id: 201, brand: '711', name: '蒸地瓜（約 110g 小條）', cal: 135, pro: 2.0, fat: 0.3, sod: 45 },
+                { id: 202, brand: '711', name: '紫米飯糰（去油條/半顆份量）', cal: 165, pro: 4.1, fat: 2.2, sod: 280 },
+                { id: 203, brand: 'family', name: '夯番薯（小條約 110g）', cal: 140, pro: 2.1, fat: 0.3, sod: 50 },
+                { id: 204, brand: 'family', name: '大口義式烤雞飯糰（半份澱粉參考）', cal: 185, pro: 8.5, fat: 3.2, sod: 420 },
+                { id: 205, brand: 'mcd', name: '玉米杯（小）', cal: 90, pro: 2.8, fat: 1.2, sod: 15 },
+                { id: 206, brand: 'mos', name: '藜麥米漢堡米板（單片量）或烤地瓜條', cal: 160, pro: 3.2, fat: 1.5, sod: 210 },
+                { id: 207, brand: 'other', name: '五谷飯 / 糙米飯半碗（約 100g）', cal: 145, pro: 3.2, fat: 0.8, sod: 5 }
+            ],
+            protein: [
+                { id: 301, brand: '711', name: '21Plus 桃木燻雞胸肉', cal: 128, pro: 24.5, fat: 2.2, sod: 490 },
+                { id: 302, brand: '711', name: '茶葉蛋 2 顆 + 無糖豆漿 1 瓶', cal: 265, pro: 26.5, fat: 12.0, sod: 480 },
+                { id: 303, brand: 'family', name: '義式香草烤雞胸肉', cal: 132, pro: 25.0, fat: 2.4, sod: 510 },
+                { id: 304, brand: 'family', name: '鹽水意麵雞胸肉/椒麻雞胸肉', cal: 138, pro: 24.8, fat: 2.8, sod: 530 },
+                { id: 305, brand: 'mcd', name: '嫩煎鷄腿堡（去美乃滋、麵包吃一半）', cal: 240, pro: 22.0, fat: 7.5, sod: 560 },
+                { id: 306, brand: 'mos', name: '摩斯鱈魚堡（去塔塔醬）或和風炸雞去皮', cal: 230, pro: 19.5, fat: 8.0, sod: 490 },
+                { id: 307, brand: 'other', name: '自助餐滷雞腿（去皮）或清蒸魚片', cal: 185, pro: 24.0, fat: 8.5, sod: 430 }
+            ]
+        };
+
+        let appState = {
+            profile: null,
+            targets: { cal: 1500, pro: 100, fat: 45, sod: 2000 },
+            currentBrand: 'all',
+            currentMeal: '早餐',
+            manageCat: 'veggie',
+            pools: JSON.parse(JSON.stringify(defaultPools)),
+            drawn: {
+                '早餐': { veggie: null, carb: null, protein: null },
+                '午餐': { veggie: null, carb: null, protein: null },
+                '晚餐': { veggie: null, carb: null, protein: null },
+                '下午茶': { veggie: null, carb: null, protein: null }
+            },
+            logsDate: new Date().toLocaleDateString(),
+            logs: []
+        };
+
+        function init() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    appState = { ...appState, ...parsed };
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            const todayStr = new Date().toLocaleDateString();
+            document.getElementById('today-date-label').innerText = todayStr;
+            if (appState.logsDate !== todayStr) {
+                appState.logsDate = todayStr;
+                appState.logs = [];
+                saveState();
+            }
+
+            if (!appState.profile) {
+                openProfileModal(true);
+            } else {
+                document.getElementById('close-modal-btn').classList.remove('hidden');
+            }
+
+            renderAll();
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        }
+
+        // 身高體重與健康減脂計算
+        function openProfileModal(isFirst = false) {
+            const modal = document.getElementById('profile-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            if (appState.profile) {
+                document.getElementById('prof-height').value = appState.profile.height;
+                document.getElementById('prof-weight').value = appState.profile.weight;
+                document.getElementById('prof-gender').value = appState.profile.gender;
+                document.getElementById('prof-age').value = appState.profile.age;
+                document.getElementById('prof-activity').value = appState.profile.activity;
+            }
+            if (!isFirst) {
+                document.getElementById('close-modal-btn').classList.remove('hidden');
+            }
+        }
+
+        function closeProfileModal() {
+            const modal = document.getElementById('profile-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function saveProfile(e) {
+            e.preventDefault();
+            const height = parseFloat(document.getElementById('prof-height').value);
+            const weight = parseFloat(document.getElementById('prof-weight').value);
+            const gender = document.getElementById('prof-gender').value;
+            const age = parseInt(document.getElementById('prof-age').value);
+            const activity = parseFloat(document.getElementById('prof-activity').value);
+
+            // Mifflin-St Jeor 公式計算 BMR 與 TDEE
+            const bmr = gender === 'male'
+                ? (10 * weight + 6.25 * height - 5 * age + 5)
+                : (10 * weight + 6.25 * height - 5 * age - 161);
+            const tdee = Math.round(bmr * activity);
+
+            // 健康減脂赤字 (TDEE 減 350~400 kcal，且不低於基礎代謝)
+            const minSafeCal = Math.round(bmr);
+            const targetCal = Math.max(minSafeCal, tdee - 350);
+            // 蛋白質建議：體重 * 1.6g
+            const targetPro = Math.round(weight * 1.6);
+            // 脂肪建議：總熱量的 25% / 9
+            const targetFat = Math.round((targetCal * 0.25) / 9);
+            // 鈉含量建議上限：2000 mg
+            const targetSod = 2000;
+
+            const bmi = (weight / ((height / 100) ** 2)).toFixed(1);
+
+            appState.profile = { height, weight, gender, age, activity, bmr: Math.round(bmr), tdee, bmi };
+            appState.targets = { cal: targetCal, pro: targetPro, fat: targetFat, sod: targetSod };
+
+            saveState();
+            closeProfileModal();
+            renderAll();
+        }
+
+        // 外食品牌分頁切換
+        function selectBrand(brand) {
+            appState.currentBrand = brand;
+            // 同步更新下方新增表單的預設品牌下拉選單
+            if (brand !== 'all') {
+                document.getElementById('new-opt-brand').value = brand;
+            }
+            saveState();
+            renderAll();
+        }
+
+        // 餐別切換
+        function selectMeal(meal) {
+            appState.currentMeal = meal;
+            document.getElementById('man-meal').value = meal;
+            saveState();
+            renderAll();
+        }
+
+        // 取得目前品牌篩選後的獎池清單
+        function getFilteredPool(cat) {
+            const list = appState.pools[cat] || [];
+            if (appState.currentBrand === 'all') return list;
+            return list.filter(item => item.brand === appState.currentBrand);
+        }
+
+        // 抽籤功能
+        function drawSingle(cat) {
+            const list = getFilteredPool(cat);
+            if (list.length === 0) {
+                alert(`【${BRAND_LABELS[appState.currentBrand]}】的這個獎池目前還沒有選項喔！請先在下方新增或切換到「全部通用」。`);
+                return;
+            }
+            const picked = list[Math.floor(Math.random() * list.length)];
+            appState.drawn[appState.currentMeal][cat] = picked;
+            saveState();
+            renderAll();
+        }
+
+        function drawAll211() {
+            ['veggie', 'carb', 'protein'].forEach(cat => {
+                const list = getFilteredPool(cat);
+                if (list.length > 0) {
+                    appState.drawn[appState.currentMeal][cat] = list[Math.floor(Math.random() * list.length)];
+                } else {
+                    appState.drawn[appState.currentMeal][cat] = null;
+                }
+            });
+            saveState();
+            renderAll();
+        }
+
+        // 將抽中的項目加入今日飲食
+        function logDrawnItems() {
+            const currentDrawn = appState.drawn[appState.currentMeal];
+            const items = [
+                { catName: '蔬菜2份', item: currentDrawn.veggie },
+                { catName: '澱粉1份', item: currentDrawn.carb },
+                { catName: '蛋白質1份', item: currentDrawn.protein }
+            ].filter(x => x.item !== null);
+
+            if (items.length === 0) {
+                alert('目前還沒抽出任何食物選項喔！');
+                return;
+            }
+
+            items.forEach(({ catName, item }) => {
+                appState.logs.unshift({
+                    id: Date.now() + Math.random(),
+                    meal: appState.currentMeal,
+                    brandLabel: BRAND_LABELS[item.brand] || '',
+                    category: catName,
+                    name: item.name,
+                    cal: Number(item.cal),
+                    pro: Number(item.pro),
+                    fat: Number(item.fat),
+                    sod: Number(item.sod),
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                });
+            });
+
+            saveState();
+            renderAll();
+            alert(`已將 ${items.length} 項搭配加入【${appState.currentMeal}】紀錄，並從今日額度扣除！`);
+        }
+
+        // 自行新增獎池選項
+        function addPoolOption(e) {
+            e.preventDefault();
+            const brand = document.getElementById('new-opt-brand').value;
+            const cat = document.getElementById('new-opt-cat').value;
+            const name = document.getElementById('new-opt-name').value.trim();
+            const cal = parseFloat(document.getElementById('new-opt-cal').value) || 0;
+            const pro = parseFloat(document.getElementById('new-opt-pro').value) || 0;
+            const fat = parseFloat(document.getElementById('new-opt-fat').value) || 0;
+            const sod = parseFloat(document.getElementById('new-opt-sod').value) || 0;
+
+            if (!name) return;
+
+            appState.pools[cat].unshift({
+                id: Date.now(),
+                brand,
+                name,
+                cal,
+                pro,
+                fat,
+                sod
+            });
+
+            document.getElementById('new-opt-name').value = '';
+            document.getElementById('new-opt-cal').value = '';
+            document.getElementById('new-opt-pro').value = '';
+            document.getElementById('new-opt-fat').value = '';
+            document.getElementById('new-opt-sod').value = '';
+
+            // 自動切換到該品牌分頁方便查看
+            appState.currentBrand = brand;
+            appState.manageCat = cat;
+            saveState();
+            renderAll();
+            alert(`已成功新增「${name}」至【${BRAND_LABELS[brand]}】獎池！`);
+        }
+
+        function togglePoolList() {
+            const box = document.getElementById('pool-manager-box');
+            box.classList.toggle('hidden');
+        }
+
+        function switchManageCat(cat) {
+            appState.manageCat = cat;
+            renderPoolManager();
+        }
+
+        function deletePoolOption(cat, id) {
+            appState.pools[cat] = appState.pools[cat].filter(item => item.id !== id);
+            saveState();
+            renderAll();
+        }
+
+        // 手動補記今日飲食
+        function addManualFood(e) {
+            e.preventDefault();
+            const meal = document.getElementById('man-meal').value;
+            const name = document.getElementById('man-name').value.trim();
+            const cal = parseFloat(document.getElementById('man-cal').value) || 0;
+            const pro = parseFloat(document.getElementById('man-pro').value) || 0;
+            const fat = parseFloat(document.getElementById('man-fat').value) || 0;
+            const sod = parseFloat(document.getElementById('man-sod').value) || 0;
+
+            if (!name) return;
+
+            appState.logs.unshift({
+                id: Date.now(),
+                meal,
+                brandLabel: '手動記錄',
+                category: '自訂',
+                name,
+                cal,
+                pro,
+                fat,
+                sod,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+
+            document.getElementById('man-name').value = '';
+            document.getElementById('man-cal').value = '';
+            document.getElementById('man-pro').value = '';
+            document.getElementById('man-fat').value = '';
+            document.getElementById('man-sod').value = '';
+
+            saveState();
+            renderAll();
+        }
+
+        function deleteLog(id) {
+            appState.logs = appState.logs.filter(item => item.id !== id);
+            saveState();
+            renderAll();
+        }
+
+        function clearTodayLogs() {
+            if (confirm('確定要清空今天所有的飲食紀錄嗎？')) {
+                appState.logs = [];
+                saveState();
+                renderAll();
+            }
+        }
+
+        // 畫面總渲染
+        function renderAll() {
+            // 1. 個人建議資訊
+            if (appState.profile) {
+                const p = appState.profile;
+                const t = appState.targets;
+                document.getElementById('principle-text').innerHTML =
+                    `身高 <b>${p.height} cm</b>、體重 <b>${p.weight} kg</b>（BMI ${p.bmi}），估算基礎代謝約 <b>${p.bmr} kcal</b>、每日總消耗約 <b>${p.tdee} kcal</b>。健康減脂建議每日攝取約 <b>${t.cal} kcal</b>、蛋白質 <b>${t.pro} g</b>、脂肪上限 <b>${t.fat} g</b>、鈉上限 <b>${t.sod} mg</b>。`;
+            }
+
+            // 2. 計算已攝取與剩餘額度
+            const used = appState.logs.reduce((acc, cur) => {
+                acc.cal += cur.cal;
+                acc.pro += cur.pro;
+                acc.fat += cur.fat;
+                acc.sod += cur.sod;
+                return acc;
+            }, { cal: 0, pro: 0, fat: 0, sod: 0 });
+
+            const t = appState.targets;
+            updateMetricCard('cal', t.cal, used.cal, 'emerald');
+            updateMetricCard('pro', t.pro, used.pro, 'sky');
+            updateMetricCard('fat', t.fat, used.fat, 'amber');
+            updateMetricCard('sod', t.sod, used.sod, 'rose');
+
+            // 3. 外食品牌分頁樣式
+            document.querySelectorAll('.brand-tab').forEach(btn => {
+                const b = btn.getAttribute('data-brand');
+                if (b === appState.currentBrand) {
+                    btn.className = 'brand-tab whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold border bg-emerald-600 text-white border-emerald-600 shadow-xs transition';
+                } else {
+                    btn.className = 'brand-tab whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold border bg-gray-50 text-gray-600 border-gray-200 hover:bg-emerald-50 transition';
+                }
+            });
+            document.getElementById('current-brand-badge').innerText = BRAND_LABELS[appState.currentBrand];
+
+            // 4. 餐別按鈕樣式
+            document.getElementById('current-meal-badge').innerText = appState.currentMeal;
+            document.querySelectorAll('.meal-btn').forEach(btn => {
+                const m = btn.getAttribute('data-meal');
+                if (m === appState.currentMeal) {
+                    btn.className = 'meal-btn py-2.5 px-2 rounded-xl text-xs font-bold border bg-emerald-600 text-white border-emerald-600 shadow-xs transition';
+                } else {
+                    btn.className = 'meal-btn py-2.5 px-2 rounded-xl text-xs font-bold border bg-white text-gray-600 border-gray-200 hover:bg-emerald-50 transition';
+                }
+            });
+
+            // 5. 獎池數量與抽籤結果卡片
+            document.getElementById('count-veggie').innerText = getFilteredPool('veggie').length;
+            document.getElementById('count-carb').innerText = getFilteredPool('carb').length;
+            document.getElementById('count-protein').innerText = getFilteredPool('protein').length;
+
+            const currentDrawn = appState.drawn[appState.currentMeal];
+            renderPickedCard('veggie', currentDrawn.veggie, '尚未抽取蔬菜選項');
+            renderPickedCard('carb', currentDrawn.carb, '尚未抽取澱粉選項');
+            renderPickedCard('protein', currentDrawn.protein, '尚未抽取蛋白質選項');
+
+            // 抽中合計預覽
+            const validPicked = [currentDrawn.veggie, currentDrawn.carb, currentDrawn.protein].filter(Boolean);
+            if (validPicked.length > 0) {
+                const sum = validPicked.reduce((a, b) => ({
+                    cal: a.cal + b.cal,
+                    pro: a.pro + b.pro,
+                    fat: a.fat + b.fat,
+                    sod: a.sod + b.sod
+                }), { cal: 0, pro: 0, fat: 0, sod: 0 });
+                document.getElementById('combo-summary').innerHTML =
+                    `目前組合合計：<b>${Math.round(sum.cal)} kcal</b>｜蛋白質 <b>${sum.pro.toFixed(1)}g</b>｜脂肪 <b>${sum.fat.toFixed(1)}g</b>｜鈉 <b>${Math.round(sum.sod)}mg</b>`;
+            } else {
+                document.getElementById('combo-summary').innerText = '抽中項目後可一鍵加入今日飲食並自動扣除額度。';
+            }
+
+            // 6. 獎池清單與今日飲食紀錄
+            renderPoolManager();
+            renderTodayLogs();
+        }
+
+        function updateMetricCard(key, target, used, color) {
+            const rem = Math.round((target - used) * 10) / 10;
+            const remEl = document.getElementById(`rem-${key}`);
+            remEl.innerText = rem;
+            if (rem < 0) {
+                remEl.classList.add('text-rose-600');
+            } else {
+                remEl.classList.remove('text-rose-600');
+            }
+            document.getElementById(`target-${key}`).innerText = target;
+            const pct = target > 0 ? Math.min(100, Math.max(0, (used / target) * 100)) : 0;
+            document.getElementById(`bar-${key}`).style.width = `${pct}%`;
+        }
+
+        function renderPickedCard(cat, item, emptyText) {
+            const box = document.getElementById(`picked-${cat}`);
+            if (!item) {
+                box.className = 'min-h-[96px] p-2.5 rounded-xl bg-white border border-gray-100 text-xs text-gray-400 flex items-center justify-center text-center';
+                box.innerHTML = emptyText;
+                return;
+            }
+            box.className = 'min-h-[96px] p-2.5 rounded-xl bg-white border border-gray-200 text-xs flex flex-col justify-between text-left shadow-2xs';
+            box.innerHTML = `
+                <div>
+                    <span class="inline-block text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded mb-1">${BRAND_LABELS[item.brand] || ''}</span>
+                    <div class="font-bold text-gray-800 leading-snug">${item.name}</div>
+                </div>
+                <div class="text-[10px] text-gray-500 mt-1.5 pt-1.5 border-t border-gray-100 grid grid-cols-2 gap-x-1">
+                    <span>熱量: <b>${item.cal}</b> kcal</span>
+                    <span>蛋白: <b>${item.pro}</b> g</span>
+                    <span>脂肪: <b>${item.fat}</b> g</span>
+                    <span>鈉: <b>${item.sod}</b> mg</span>
+                </div>
+            `;
+        }
+
+        function renderPoolManager() {
+            const cat = appState.manageCat;
+            document.querySelectorAll('.mcat-btn').forEach(btn => {
+                btn.className = 'mcat-btn px-2.5 py-1 rounded-lg font-bold bg-gray-100 text-gray-600';
+            });
+            const activeBtn = document.getElementById(`mcat-${cat}`);
+            if (activeBtn) {
+                activeBtn.className = 'mcat-btn px-2.5 py-1 rounded-lg font-bold bg-emerald-100 text-emerald-800';
+            }
+
+            const listEl = document.getElementById('pool-options-list');
+            const items = getFilteredPool(cat);
+            if (items.length === 0) {
+                listEl.innerHTML = `<div class="text-center text-gray-400 py-3">【${BRAND_LABELS[appState.currentBrand]}】目前在此分類尚無選項</div>`;
+                return;
+            }
+
+            listEl.innerHTML = items.map(item => `
+                <div class="flex items-center justify-between p-2 rounded-xl bg-gray-50 border border-gray-100">
+                    <div>
+                        <div class="font-bold text-gray-700">
+                            <span class="text-[10px] bg-white border border-gray-200 px-1.5 py-0.5 rounded mr-1">${BRAND_LABELS[item.brand] || ''}</span>
+                            ${item.name}
+                        </div>
+                        <div class="text-[10px] text-gray-400 mt-0.5">
+                            ${item.cal} kcal｜蛋白質 ${item.pro}g｜脂肪 ${item.fat}g｜鈉 ${item.sod}mg
+                        </div>
+                    </div>
+                    <button onclick="deletePoolOption('${cat}', ${item.id})" class="text-rose-400 hover:text-rose-600 px-2 py-1" title="刪除選項">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderTodayLogs() {
+            const listEl = document.getElementById('today-logs-list');
+            if (appState.logs.length === 0) {
+                listEl.innerHTML = '<div class="text-center text-gray-400 py-6 bg-gray-50/60 rounded-2xl border border-dashed border-gray-200">今天還沒有飲食紀錄，從上方抽一組 211 減脂餐吧！</div>';
+                return;
+            }
+
+            listEl.innerHTML = appState.logs.map(log => `
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/40 border border-emerald-100">
+                    <div class="space-y-0.5">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">${log.meal}</span>
+                            ${log.brandLabel ? `<span class="bg-white text-gray-600 border border-gray-200 text-[10px] px-1.5 py-0.5 rounded-full">${log.brandLabel}</span>` : ''}
+                            <span class="font-bold text-gray-800">${log.name}</span>
+                            <span class="text-[10px] text-gray-400">${log.time}</span>
+                        </div>
+                        <div class="text-[11px] text-gray-500">
+                            熱量 <b>${log.cal}</b> kcal・蛋白質 <b>${log.pro}</b>g・脂肪 <b>${log.fat}</b>g・鈉 <b>${log.sod}</b>mg
+                        </div>
+                    </div>
+                    <button onclick="deleteLog(${log.id})" class="text-rose-400 hover:text-rose-600 p-1.5" title="刪除此筆並還原額度">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
